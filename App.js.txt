@@ -1,0 +1,1377 @@
+import React from 'react';
+import { Alert, Button, DrawerLayoutAndroid, Modal,StyleSheet, Text, TextInput, TouchableHighlight, ToastAndroid, View, Image, ScrollView, TimerMixin } from 'react-native';
+import axios from 'axios';
+import {List, ListItem} from 'react-native-elements';
+
+export default class App extends React.Component {
+  constructor(props){
+    super(props);
+
+    this.handleLogIn = this.handleLogIn.bind(this);
+    this.handleRegister = this.handleRegister.bind(this);
+    this.handleRegCancel = this.handleRegCancel.bind(this);
+    this.handleCourses = this.handleCourses.bind(this);
+    this.handleAddCourse = this.handleAddCourse.bind(this);
+    this.handleSignUp = this.handleSignUp.bind(this);
+    this.handleLogOut = this.handleLogOut.bind(this);
+    this.handleProfile = this.handleProfile.bind(this);
+    this.openDrawer = this.openDrawer.bind(this);
+    this.editProfile = this.editProfile.bind(this);
+    this.addcourse1 = this.addcourse1.bind(this);
+    this.addQuestion = this.addQuestion.bind(this);
+    this.ViewCourse = this.ViewCourse.bind(this);
+    this.getCourses = this.getCourses.bind(this);
+    this.handleQuiz = this.handleQuiz.bind(this);
+    this.sendAnswerA = this.sendAnswerA.bind(this);
+    this.sendAnswerB = this.sendAnswerB.bind(this);
+    this.sendAnswerC = this.sendAnswerC.bind(this);
+    this.sendAnswerD = this.sendAnswerD.bind(this);
+    this.noAnswer = this.noAnswer.bind(this);
+    this.handleChoices = this.handleChoices.bind(this);
+    this.endQuiz = this.endQuiz.bind(this);
+    this.getScores = this.getScores.bind(this);
+
+    this.state = {
+      TextName: '',
+      TextPass: '',
+      TextConfirmPass: '',
+      modalLogIn: true,
+      modalReg: false,
+      modalMain: false,
+      modalDrawer: false,
+      modalAddCourse: false,
+      modalProfile: false,
+      newUsername: '',
+      newPassword: '',
+      crtCourseTitle: '',
+      crtCourseDesc:'',
+      itemName: '',
+      itemValue: '',
+      modaladdQuestion: false,
+      courseTitle: [],
+      courseDesc: [],
+      allCourses: [],
+      selectedCourse: '',
+      keyCourse: '',
+      keyDesc: '',
+      modalViewCourse: false,
+      viewCourse: [],
+      modalQuiz: false,
+      intScore: 0,
+      wrongAnswers: [],
+      intCounter: 0,
+      question: '',
+      intTimer: 10,
+      letterA: '',
+      letterB: '',
+      letterC: '',
+      letterD: '',
+      intsample2: 0,
+      intsample3: 0,
+      intsample4: 0,
+      intDone: 0,
+      intLength: 0,
+      CheckName: '',
+      CheckDesc: '',
+      allscores: [],
+    };
+  }
+
+  getScores(){
+    var varCounter = 0;
+    for(var i = 0 ; i < this.state.viewCourse.length ; i++){
+      if(this.state.viewCourse[i].score != '' || this.state.viewCourse[i].score != null){
+        this.setState({
+          allCourses:  this.state.allCourses.concat([this.state.viewCourse[i].score + this.state.viewCourse[i].username]),
+        })
+      }
+    }
+  }
+
+  handleChoices(){
+    this.setState({
+      intsample: Math.floor(Math.random() * (3 - 0) + 0 * 20),
+      intsample2: Math.floor(Math.random() * (this.state.intLength - 0) + 0 * 20),
+      intsample3: Math.floor(Math.random() * (this.state.intLength - 0) + 0 * 20),
+      intsample4: Math.floor(Math.random() * (this.state.intLength - 0) + 0 * 20),
+    })
+    if(this.state.intsample == 0){
+      this.setState({
+        letterA: this.state.viewCourse[this.state.intCounter].itemname,
+        letterB: this.state.viewCourse[this.state.intsample2].itemname,
+        letterC: this.state.viewCourse[this.state.intsample3].itemname,
+        letterD: this.state.viewCourse[this.state.intsample4].itemname,
+        })
+    }
+    if(this.state.intsample == 1){
+      this.setState({
+        letterB: this.state.viewCourse[this.state.intCounter].itemname,
+        letterA: this.state.viewCourse[this.state.intsample2].itemname,
+        letterC: this.state.viewCourse[this.state.intsample3].itemname,
+        letterD: this.state.viewCourse[this.state.intsample4].itemname,
+        })
+
+    }
+    if(this.state.intsample == 2){
+      this.setState({
+        letterC: this.state.viewCourse[this.state.intCounter].itemname,
+        letterB: this.state.viewCourse[this.state.intsample2].itemname,
+        letterA: this.state.viewCourse[this.state.intsample3].itemname,
+        letterD: this.state.viewCourse[this.state.intsample4].itemname,
+        })
+
+    }
+    if(this.state.intsample == 3){
+      this.setState({
+        letterD: this.state.viewCourse[this.state.intCounter].itemname,
+        letterB: this.state.viewCourse[this.state.intsample2].itemname,
+        letterC: this.state.viewCourse[this.state.intsample3].itemname,
+        letterA: this.state.viewCourse[this.state.intsample4].itemname,
+        })
+        
+    }
+  }
+
+  getCourses() {
+    return axios.post('http://192.168.0.14:3009/api/course/allcourses')
+    .then(response => {
+      this.setState({
+        allCourses: response.data,
+      })
+    })
+    .catch(err => {
+      ToastAndroid.show(err.toString(), ToastAndroid.SHORT);
+    })
+  }
+
+  openDrawer() {
+    this.drawer.openDrawer();
+  }
+
+  handleLogIn(){
+    this.getCourses();
+
+    const Userdata = {
+      username: this.state.TextName,
+      password: this.state.TextPass,
+    };
+
+    return axios.post('http://192.168.0.14:3009/api/users/login', Userdata)
+      .then(response => {
+        try{
+          this.setState({
+            TextName: response.data.username,
+            TextPass: response.data.password,
+          })
+        }catch(e){ 
+          ToastAndroid.show("Invalid Username or Password", ToastAndroid.SHORT);
+        }
+        if(response.data.username == '' || response.data.username == null){
+          ToastAndroid.show("Invalid Username or Password", ToastAndroid.SHORT);
+        }else{
+          ToastAndroid.show("Hello " + response.data.username, ToastAndroid.SHORT);
+          this.setState({
+            modalLogIn: false,
+            modalMain: true
+          })
+        }
+      })
+      .catch(err => {
+        ToastAndroid.show(err.toString(), ToastAndroid.SHORT);
+      })
+
+    //this.setState({modalLogIn: false, modalMain: true});
+  }
+
+  handleRegister(){
+    this.setState({modalLogIn: false, modalReg: true});
+  }
+
+  handleRegCancel(){
+    this.setState({modalLogIn: true, modalReg: false});
+  }
+
+  handleCourses(){
+    this.setState({modalDrawer: false, modalMain: true, modalProfile: false, modalAddCourse: false, modalViewCourse: false});
+    this.setState({
+      crtCourseTitle: '',
+    })
+    this.getCourses();
+  }
+
+  handleAddCourse(){
+    this.setState({modalMain: false, modalAddCourse: true});
+  }
+
+  handleSignUp(){
+    if(this.state.TextPass != '' && this.state.TextConfirmPass != '' && this.state.TextName != ''){
+      if(this.state.TextPass == this.state.TextConfirmPass){
+        
+        const Userdata = {
+          username: this.state.TextName,
+          password: this.state.TextPass,
+        };
+
+        return axios.post('http://192.168.0.14:3009/api/users/login', Userdata)
+          .then(response => {
+            if(response.data.username == '' || response.data.username == null){
+              const data = {
+                username: this.state.TextName,
+                password: this.state.TextPass,
+              };
+          
+              axios.post('http://192.168.0.14:3009/api/users/',data)
+              .then(response => {
+                ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
+          
+                this.setState({
+                  modalReg: false,
+                  modalLogIn: true,
+                  username: '',
+                  password: '',
+                  TextName: '',
+                  TextPass:''
+                })
+              })
+              .catch(err => ToastAndroid.show(err.response.data.error, ToastAndroid.LONG))
+            }else{
+              ToastAndroid.show("Username and Password is already taken.", ToastAndroid.SHORT);
+            }
+          })
+          .catch(err => {
+            ToastAndroid.show(err.toString(), ToastAndroid.SHORT);
+          })
+
+        /*
+        const data = {
+          username: this.state.TextName,
+          password: this.state.TextPass,
+        };
+    
+        axios.post('http://192.168.0.14:3009/api/users/',data)
+        .then(response => {
+          ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
+    
+          this.setState({
+            modalReg: false,
+            modalLogIn: true,
+            username: '',
+            password: '',
+            TextName: '',
+            TextPass:''
+          })
+        })
+        .catch(err => ToastAndroid.show(err.response.data.error, ToastAndroid.LONG))
+        */
+        //this.setState({modalReg: false, modalLogIn:true});
+      }else{
+        ToastAndroid.show('Password does not match!', ToastAndroid.SHORT);
+      }
+    }else{
+      ToastAndroid.show('Please fill up all information!', ToastAndroid.SHORT);
+    }
+  }
+
+  handleLogOut(){
+    this.setState({
+      modalDrawer: false, 
+      modalLogIn: true,
+      TextName: '',
+      TextPass: ''
+    });
+  }
+
+  handleProfile(){
+    this.setState({
+      modalDrawer: false, 
+      modalProfile: true,
+      newUsername: this.state.TextName,
+      newPassword: this.state.TextPass
+    });
+  }
+
+  editProfile(){
+      if(this.state.newUsername != '' || this.state.newPassword != ''){
+        const data = {
+          username: this.state.newUsername,
+          password: this.state.newPassword,
+          username1: this.state.TextName,
+          password1: this.state.TextPass,
+        };
+
+        axios.put('http://192.168.0.14:3009/api/users/edit',data)
+        .then(response => {
+          //ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
+          ToastAndroid.show('Hello '+this.state.newUsername, ToastAndroid.SHORT);
+          this.setState({
+            TextName: this.state.newUsername,
+            TextPass: this.state.newPassword,
+          })
+        })
+        .catch(err => ToastAndroid.show(err.response.data.error, ToastAndroid.LONG))
+      }else{
+        ToastAndroid.show('Hello '+this.state.TextName+' please input something before saving', ToastAndroid.SHORT);
+      }
+  }
+
+  addcourse1(){
+    var checker = 0;
+    for(var i = 0 ; i < this.state.crtCourseTitle.length; i++){
+      if(this.state.crtCourseTitle[i] == ' '){
+        ToastAndroid.show('Title contains spaces', ToastAndroid.SHORT);
+        checker = 1;
+      }
+    }
+    if(checker == 0){
+      if(this.state.crtCourseTitle != '' && this.state.crtCourseDesc != ''){
+        const data = {
+          username: this.state.TextName,
+          title: this.state.crtCourseTitle,
+          description: this.state.crtCourseDesc,
+        };
+
+        axios.post('http://192.168.0.14:3009/api/course/crtcourse',data)
+        .then(response => {
+          ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
+        })
+
+        axios.post('http://192.168.0.14:3009/api/course/create',data)
+        .then(response => {
+          ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
+          this.setState({
+            modalAddCourse: false,
+            modaladdQuestion: true,
+            crtCourseDesc: '',
+          })
+        })
+
+        .catch(err => ToastAndroid.show(err.response.data.error, ToastAndroid.LONG))
+      }else{
+        ToastAndroid.show('Please complete the form before proceeding.', ToastAndroid.SHORT);
+    }
+  }
+  }
+
+  addQuestion(){
+    if(this.state.itemName != '' && this.state.itemValue != ''){
+      const data = {
+        title: this.state.crtCourseTitle,
+        item: this.state.itemName,
+        description: this.state.itemValue,
+      };
+
+      axios.post('http://192.168.0.14:3009/api/course/crtquestions',data)
+      .then(response => {
+        ToastAndroid.show(response.data.message, ToastAndroid.SHORT);
+        this.setState({
+          itemName: '',
+          itemValue: ''
+        })
+        this.textInputName.clear()
+        this.textInputValue.clear()
+      })
+      .catch(err => ToastAndroid.show(err.response.data.error, ToastAndroid.LONG))
+    }else{
+      ToastAndroid.show('Complete the data before adding another item', ToastAndroid.SHORT);
+    }
+  }
+
+  ViewCourse(title, desc){
+    this.setState({
+      keyCourse: title,
+      keyDesc: desc,
+      intCounter: 0,
+    })
+    const data = {
+      Ctitle: title
+    }
+    return axios.post('http://192.168.0.14:3009/api/course/viewcourse', data)
+    .then(response => {
+      this.setState({
+        viewCourse: response.data,
+        modalViewCourse: true,
+        modalMain: false,
+      })
+      this.setState({
+        intLength: 0,
+      })
+      for(var i = 0 ; i < this.state.viewCourse.length; i++ ){
+        if(this.state.viewCourse[i].itemname != '' && this.state.viewCourse[i].itemname != null){
+          this.setState({
+            intLength: this.state.intLength + 1,
+          })
+        }
+      }
+      this.handleChoices();
+    })
+    .catch(err => {
+      ToastAndroid.show(err.toString(), ToastAndroid.SHORT);
+    })
+  }
+
+  handleQuiz(){
+    this.setState({
+      modalQuiz: true,
+      modalViewCourse: false,
+      question: this.state.viewCourse[this.state.intCounter].itemdesc,
+      intTimer: 10,
+    })
+    
+    window.intervalID = setInterval(() => {
+      this.setState({
+        intTimer: this.state.intTimer - 1,
+      });
+      if(this.state.intLength == this.state.intCounter){
+        clearInterval(intervalID);
+      }
+      if(this.state.intTimer == 0){
+        this.noAnswer();
+      }
+    }, 1000);
+  }
+
+  sendAnswerA(){
+    this.setState({
+      CheckName: '',
+    })
+    const Userdata = {
+      title: this.state.keyCourse,
+      itemname: this.state.letterA,
+      itemdesc: this.state.question,
+    };
+
+    return axios.post('http://192.168.0.14:3009/api/course/answer', Userdata)
+      .then(response => {
+        try{
+          this.setState({
+            CheckName: response.data.itemname,
+            CheckDesc: response.data.itemdesc,
+          })
+        }catch(e){ 
+          ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+        }
+        if(this.state.CheckName == '' || this.state.CheckName == null){
+          ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+          this.setState({
+            modalQuiz: false,
+            intCounter: this.state.intCounter + 1,
+            intTimer: 10,
+          })
+          if(this.state.intLength == this.state.intCounter){
+            clearInterval(window.intervalID);
+            this.setState({
+              modalQuiz: false,
+            })
+            this.endQuiz();
+          }else{
+            this.handleChoices();
+            this.setState({
+              question: this.state.viewCourse[this.state.intCounter].itemdesc,
+              modalQuiz: true,
+            })
+          }
+        }else{
+          ToastAndroid.show("You Got The Right Answer " + this.state.TextName, ToastAndroid.SHORT);
+          this.setState({
+            modalQuiz: false,
+            intScore: this.state.intScore + 1,
+            intCounter: this.state.intCounter + 1,
+            intTimer: 10,
+          })
+          if(this.state.intLength == this.state.intCounter){
+            clearInterval(window.intervalID);
+            this.setState({
+              modalQuiz: false,
+            })
+            this.endQuiz();
+          }else{
+            this.handleChoices();
+            this.setState({
+              question: this.state.viewCourse[this.state.intCounter].itemdesc,
+              modalQuiz: true,
+            })
+          }
+        }
+      })
+      .catch(err => {
+        ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+      })
+  }
+
+  sendAnswerB(){
+    this.setState({
+      CheckName: '',
+    })
+    const Userdata = {
+      title: this.state.keyCourse,
+      itemname: this.state.letterB,
+      itemdesc: this.state.question,
+    };
+
+    return axios.post('http://192.168.0.14:3009/api/course/answer', Userdata)
+      .then(response => {
+        try{
+          this.setState({
+            CheckName: response.data.itemname,
+            CheckDesc: response.data.itemdesc,
+          })
+        }catch(e){ 
+          ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+        }
+        if(this.state.CheckName == '' || this.state.CheckName == null){
+          ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+          this.setState({
+            modalQuiz: false,
+            intCounter: this.state.intCounter + 1,
+            intTimer: 10,
+          })
+          if(this.state.intLength == this.state.intCounter){
+            clearInterval(window.intervalID);
+            this.setState({
+              modalQuiz: false,
+            })
+            this.endQuiz();
+          }else{
+            this.handleChoices();
+            this.setState({
+              question: this.state.viewCourse[this.state.intCounter].itemdesc,
+              modalQuiz: true,
+            })
+          }
+        }else{
+          ToastAndroid.show("You Got The Right Answer " + this.state.TextName, ToastAndroid.SHORT);
+          this.setState({
+            modalQuiz: false,
+            intScore: this.state.intScore + 1,
+            intCounter: this.state.intCounter + 1,
+            intTimer: 10,
+          })
+          if(this.state.intLength == this.state.intCounter){
+            clearInterval(window.intervalID);
+            this.setState({
+              modalQuiz: false,
+            })
+            this.endQuiz();
+          }else{
+            this.handleChoices();
+            this.setState({
+              question: this.state.viewCourse[this.state.intCounter].itemdesc,
+              modalQuiz: true,
+            })
+          }
+        }
+      })
+      .catch(err => {
+        ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+      })
+  }
+
+  sendAnswerC(){
+    this.setState({
+      CheckName: '',
+    })
+    const Userdata = {
+      title: this.state.keyCourse,
+      itemname: this.state.letterC,
+      itemdesc: this.state.question,
+    };
+
+    return axios.post('http://192.168.0.14:3009/api/course/answer', Userdata)
+      .then(response => {
+        try{
+          this.setState({
+            CheckName: response.data.itemname,
+            CheckDesc: response.data.itemdesc,
+          })
+        }catch(e){ 
+          ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+        }
+        if(this.state.CheckName == '' || this.state.CheckName == null){
+          ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+          this.setState({
+            modalQuiz: false,
+            intCounter: this.state.intCounter + 1,
+            intTimer: 10,
+          })
+          if(this.state.intLength == this.state.intCounter){
+            clearInterval(window.intervalID);
+            this.setState({
+              modalQuiz: false,
+            })
+            this.endQuiz();
+          }else{
+            this.handleChoices();
+            this.setState({
+              question: this.state.viewCourse[this.state.intCounter].itemdesc,
+              modalQuiz: true,
+            })
+          }
+        }else{
+          ToastAndroid.show("You Got The Right Answer " + this.state.TextName, ToastAndroid.SHORT);
+          this.setState({
+            modalQuiz: false,
+            intScore: this.state.intScore + 1,
+            intCounter: this.state.intCounter + 1,
+            intTimer: 10,
+          })
+          if(this.state.intLength == this.state.intCounter){
+            clearInterval(window.intervalID);
+            this.setState({
+              modalQuiz: false,
+            })
+            this.endQuiz();
+          }else{
+            this.handleChoices();
+            this.setState({
+              question: this.state.viewCourse[this.state.intCounter].itemdesc,
+              modalQuiz: true,
+            })
+          }
+        }
+      })
+      .catch(err => {
+        ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+      })
+  }
+
+  sendAnswerD(){
+    this.setState({
+      CheckName: '',
+    })
+    const Userdata = {
+      title: this.state.keyCourse,
+      itemname: this.state.letterD,
+      itemdesc: this.state.question,
+    };
+
+    return axios.post('http://192.168.0.14:3009/api/course/answer', Userdata)
+      .then(response => {
+        try{
+          this.setState({
+            CheckName: response.data.itemname,
+            CheckDesc: response.data.itemdesc,
+          })
+        }catch(e){ 
+          ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+        }
+        if(this.state.CheckName == '' || this.state.CheckName == null){
+          ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+          this.setState({
+            modalQuiz: false,
+            intCounter: this.state.intCounter + 1,
+            intTimer: 10,
+          })
+          if(this.state.intLength == this.state.intCounter){
+            clearInterval(window.intervalID);
+            this.setState({
+              modalQuiz: false,
+            })
+            this.endQuiz();
+          }else{
+            this.handleChoices();
+            this.setState({
+              question: this.state.viewCourse[this.state.intCounter].itemdesc,
+              modalQuiz: true,
+            })
+          }
+        }else{
+          ToastAndroid.show("You Got The Right Answer " + this.state.TextName, ToastAndroid.SHORT);
+          this.setState({
+            modalQuiz: false,
+            intScore: this.state.intScore + 1,
+            intCounter: this.state.intCounter + 1,
+            intTimer: 10,
+          })
+          if(this.state.intLength == this.state.intCounter){
+            clearInterval(window.intervalID);
+            this.setState({
+              modalQuiz: false,
+            })
+            this.endQuiz();
+          }else{
+            this.handleChoices();
+            this.setState({
+              question: this.state.viewCourse[this.state.intCounter].itemdesc,
+              modalQuiz: true,
+            })
+          }
+        }
+      })
+      .catch(err => {
+        ToastAndroid.show("Incorrect Answer", ToastAndroid.SHORT);
+      })
+  }
+
+  noAnswer(){
+    ToastAndroid.show("Time is up!", ToastAndroid.SHORT);
+    this.setState({
+      modalQuiz: false,
+      intCounter: this.state.intCounter + 1,
+      intTimer: 10,
+    })
+    if(this.state.intLength == this.state.intCounter){
+      clearInterval(window.intervalID);
+      this.setState({
+        modalQuiz: false,
+      })
+      this.endQuiz();
+    }else{
+      this.handleChoices();
+      this.setState({
+        question: this.state.viewCourse[this.state.intCounter].itemdesc,
+        modalQuiz: true,
+      })
+    }
+  }
+
+  endQuiz(){
+    this.ViewCourse(this.state.keyCourse);
+    const data = {
+      title: this.state.keyCourse,
+      score: this.state.intScore,
+      username: this.state.TextName,
+    };
+    axios.post('http://192.168.0.14:3009/api/course/results',data)
+    .then(response => {
+    })
+    .catch(err => ToastAndroid.show(err.response.data.error, ToastAndroid.LONG))
+  }
+  
+
+  render() {
+    var varCounter = this.state.intCounter;
+    var navigationView = (
+      <View style={{flex: 1, backgroundColor: '#302E2E'}}>
+        <View style={{backgroundColor: 'black', paddingBottom: 10, elevation: 15}}>
+          <Text style={{color: 'white', marginLeft: 70, marginTop: 10, fontSize: 30}}>
+            Learn
+            </Text>
+          <Text style={{color: 'black', marginLeft: 150, marginTop: -40, fontSize: 30, backgroundColor: 'yellow', width: 62
+            ,paddingLeft: 5, borderRadius: 5}}>
+            hub
+          </Text>
+        </View>
+        <View style={{marginTop:10, elevation:10}}>
+        <Button 
+          onPress={this.handleCourses} 
+          title="My Courses" 
+          color="black"
+          />
+        </View>
+        <View style={{marginTop:1}}>
+        <Button 
+          onPress={this.handleProfile} 
+          title="My Profile" 
+          color="black"
+          />
+        </View>
+        <View style={{marginTop:2}}>
+        <Button 
+          onPress={this.handleProfile} 
+          title="Settings" 
+          color="black"
+          />
+        </View>
+        <View style={{marginTop:390}}>
+        <Button 
+          onPress={this.handleLogOut} 
+          title="Log Out" 
+          color="black"
+          />
+        </View>
+      </View>
+    );
+    return (
+      <View>
+        <Modal
+          animationType="fade"
+            onRequestClose={() => this.setState({ modalLogIn: true })}
+            transparent={false}
+            visible={this.state.modalLogIn}>
+            <View style={[styles.background]}>
+              <Text style={{ textShadowOffset: {width: 3, height: 3}, textShadowRadius: 4, marginTop: 40,
+                fontFamily: 'serif', fontSize: 30, color: 'white' }}>Learn</Text>
+                <View style={{backgroundColor: 'yellow', paddingLeft: 5, paddingRight: 5, borderRadius: 5}}>
+                  <Text style={{ textShadowOffset: {width: 3, height: 3}, textShadowRadius: 4,
+                  fontFamily: 'serif', fontSize: 40, color: 'black' }}>Hub</Text>
+                  </View>
+              <View style={[styles.container]}>
+                <Text style={styles.Text}>                                                            {"\n"}</Text>  
+                <Image
+                  style={{width: 80,height: 80,marginTop:-50}}
+                  source={require('./assets/images/profile.png')}
+                  />
+                <TextInput  
+                  style={{height: 40, width: 300, marginTop: 10, fontSize: 20, paddingLeft: 10}}
+                  placeholder="Username!"
+                  onChangeText={(text) => this.setState({TextName: text})}
+                />
+                <TextInput 
+                  secureTextEntry={true} 
+                  style={{height: 40, width: 300, marginTop: 20, fontSize: 20, paddingLeft: 10,marginBottom: 40}}
+                  placeholder="Password!"
+                  onChangeText={(text) => this.setState({TextPass: text})}
+                />
+                <Button
+                  title="Log In"
+                  color="black"
+                  onPress={this.handleLogIn}
+                  accessibilityLabel="Log In"
+                />
+              </View>
+                <Button
+                  title="Register"
+                  color="red"
+                  onPress={this.handleRegister}
+                  accessibilityLabel="Register"
+                />
+            </View>
+        </Modal>
+
+        <Modal
+          animationType="fade"
+            onRequestClose={() => this.setState({ modalLogIn: true, modalReg: false })}
+            transparent={false}
+            visible={this.state.modalReg}>
+            <View style={[styles.background]}>
+              <Text style={{ textShadowOffset: {width: 3, height: 3}, textShadowRadius: 4, marginTop: 30,
+                fontFamily: 'serif', fontSize: 30, color: 'white' }}>Learn</Text>
+                <View style={{backgroundColor: 'yellow', paddingLeft: 5, paddingRight: 5, borderRadius: 5}}>
+                  <Text style={{ textShadowOffset: {width: 3, height: 3}, textShadowRadius: 4,
+                  fontFamily: 'serif', fontSize: 40, color: 'black' }}>Hub</Text>
+                  </View>
+              <View style={{ backgroundColor: 'white', alignItems: 'center', borderWidth: 0, borderRadius: 4,
+                 elevation: 15, paddingLeft: 15, paddingRight: 15, marginTop:40, marginBottom: 30, height: 400, marginLeft:15,
+                 marginRight:15, }}>
+                <Text style={styles.Text}>                                                            {"\n"}</Text>  
+                <Image
+                  style={{width: 80,height: 80,marginTop:-50}}
+                  source={require('./assets/images/profile.png')}
+                  />
+                <TextInput  
+                  style={{height: 40, width: 300, marginTop: 10, fontSize: 20, paddingLeft: 10}}
+                  placeholder="Username!"
+                  maxLength={20}
+                  onChangeText={(text) => this.setState({TextName: text})}
+                />
+                <TextInput 
+                  secureTextEntry={true} 
+                  style={{height: 40, width: 300, marginTop: 20, fontSize: 20, paddingLeft: 10}}
+                  placeholder="Password!"
+                  maxLength={20}
+                  onChangeText={(text) => this.setState({TextPass: text})}
+                />
+                <TextInput 
+                  secureTextEntry={true} 
+                  style={{height: 40, width: 300, marginTop: 20, fontSize: 20, paddingLeft: 10,marginBottom: 40}}
+                  placeholder="Confirm Password!"
+                  onChangeText={(text) => this.setState({TextConfirmPass: text})}
+                />
+                <Button
+                  title="Sign Up"
+                  color="#841584"
+                  onPress={this.handleSignUp}
+                  accessibilityLabel="Log In"
+                />
+              </View>
+                <Button
+                  title="Cancel"
+                  color="#EC0C0C"
+                  onPress={this.handleRegCancel}
+                  accessibilityLabel="Cancel"
+                />
+            </View>
+        </Modal>
+
+        <Modal
+          animationType="fade"
+            onRequestClose={() => this.setState({ modalMain: true})}
+            transparent={false}
+            visible={this.state.modalMain}>
+            <DrawerLayoutAndroid
+              drawerWidth={300}
+              ref={(drawer) => this.drawer = drawer}
+              drawerPosition={DrawerLayoutAndroid.positions.Left}
+              renderNavigationView={() => navigationView}
+              >
+              <View
+                style={{height: 80, backgroundColor: 'black', elevation:10}}
+              >
+              <TouchableHighlight onPress={this.openDrawer}>
+                <Image
+                style={{width: 42,height: 40, marginTop: 20, marginLeft: 10}}
+                  source={require('./assets/images/drawer.png')}
+                />
+              </TouchableHighlight>
+                <Text style={{color: 'white', marginLeft: 70, marginTop: -40, fontSize: 30}}>
+                  Learn
+                  </Text>
+                <Text style={{color: 'black', marginLeft: 150, marginTop: -40, fontSize: 30, backgroundColor: 'yellow', width: 62
+                  ,paddingLeft: 5, borderRadius: 5}}>
+                  hub
+                  </Text>
+                <Image
+                  style={{width: 42,height: 40, marginTop: -40, marginLeft: 300, marginRight: 10}}
+                  source={require('./assets/images/search.png')}/>
+              </View>
+                  <List style={{height: 480, backgroundColor: "white"}}>
+                    <ScrollView>
+                    {
+                      this.state.allCourses.map((l, i) =>(
+                        <ListItem
+                          key={i}
+                          title={l.title}
+                          subtitle={l.description}
+                          onPress={(key) => this.ViewCourse(l.title, l.description)}
+                        />
+                      ))                    
+                    }
+                    </ScrollView>
+                    </List>
+              <View style={{flex: 1, backgroundColor: '#302E2E'}}>
+                <View style={{width: 350, marginLeft: 5,marginTop:10}}>
+                  <Button
+                    title="(+) Create course"
+                    color="gray"
+                    onPress={this.handleAddCourse}
+                    accessibilityLabel="Cancel"
+                  />
+                  </View>
+                </View>
+            </DrawerLayoutAndroid>
+        </Modal>
+
+          <Modal
+            animationType="fade"
+            onRequestClose={() => this.setState({ modalMain: true, modalAddCourse: false})}
+            transparent={false}
+            visible={this.state.modalAddCourse}>
+            <DrawerLayoutAndroid
+              drawerWidth={300}
+              ref={(drawer) => this.drawer = drawer}
+              drawerPosition={DrawerLayoutAndroid.positions.Left}
+              renderNavigationView={() => navigationView}
+              >
+            <View
+                style={{height: 80, backgroundColor: 'black', elevation:10}}
+              >
+              <TouchableHighlight onPress={this.openDrawer}>
+                <Image
+                style={{width: 42,height: 40, marginTop: 20, marginLeft: 10}}
+                  source={require('./assets/images/drawer.png')}
+                />
+                </TouchableHighlight>
+                <Text style={{color: 'white', marginLeft: 70, marginTop: -40, fontSize: 30}}>
+                  Learn
+                  </Text>
+                <Text style={{color: 'black', marginLeft: 150, marginTop: -40, fontSize: 30, backgroundColor: 'yellow', width: 62
+                  ,paddingLeft: 5, borderRadius: 5}}>
+                  hub
+                  </Text>
+                <Image
+                  style={{width: 42,height: 40, marginTop: -40, marginLeft: 300, marginRight: 10}}
+                  source={require('./assets/images/search.png')}/>
+              </View>
+              <View
+                style={{flex: 1, backgroundColor: '#302E2E'}}>
+                <ScrollView contentContainerStyle={{paddingBottom:10}}>
+                  <View
+                    style={{height: 60, width: 290, backgroundColor: 'black', margin: 30, borderRadius: 8}}
+                    justifyContent='center'
+                    alignItems='center'>
+                    <Text
+                      style={{fontSize: 30, color: 'white'}}>
+                      Adding a Course
+                      </Text>
+                    </View>
+                    <Text
+                      style={{marginLeft: 20, fontSize: 20, color: 'white', marginTop: -10}}>
+                      1. Course Title: 
+                      </Text>
+                      <Text
+                      style={{marginLeft: 20, fontSize: 15, color: 'gray'}}>
+                      ( please use '_' instead of spaces )
+                      </Text>
+                    <TextInput  
+                      style={{height: 40, width: 300, marginTop: 10, fontSize: 20, paddingLeft: 10, marginLeft: 20,
+                        backgroundColor: 'white'}}
+                      placeholder="Title!"
+                      onChangeText={(text) => this.setState({crtCourseTitle: text})}
+                      />
+                    <Text
+                      style={{marginLeft: 20, fontSize: 20, color: 'white', marginTop: 20}}>
+                      2. Description:
+                      </Text>
+                    <TextInput  
+                      style={{height: 180, width: 300, marginTop: 10, fontSize: 20, padding: 10, marginLeft: 20,
+                        backgroundColor: 'white', textAlignVertical: 'top', marginBottom: 20}}
+                        multiline={true}
+                      placeholder="Description!"
+                      onChangeText={(text) => this.setState({crtCourseDesc: text})}
+                      />
+                      <View style={{marginBottom: 10}}>
+                        <Button
+                          title="Next"
+                          color="gray"
+                          onPress={this.addcourse1}
+                          accessibilityLabel="Cancel"
+                        />
+                       </View>
+                      <Button
+                        title="Cancel"
+                        color="red"
+                        onPress={this.handleCourses}
+                        accessibilityLabel="Cancel"
+                      />
+                </ScrollView>
+              </View>
+              </DrawerLayoutAndroid>
+          </Modal>
+
+          <Modal
+            animationType="fade"
+            onRequestClose={() => this.setState({ modalMain: true, modalProfile: false})}
+            transparent={false}
+            visible={this.state.modalProfile}>
+            <DrawerLayoutAndroid
+              drawerWidth={300}
+              ref={(drawer) => this.drawer = drawer}
+              drawerPosition={DrawerLayoutAndroid.positions.Left}
+              renderNavigationView={() => navigationView}
+              >
+            <View
+                style={{height: 80, backgroundColor: 'black', elevation:10}}
+              >
+              <TouchableHighlight onPress={this.openDrawer}>
+                <Image
+                style={{width: 42,height: 40, marginTop: 20, marginLeft: 10}}
+                  source={require('./assets/images/drawer.png')}
+                />
+              </TouchableHighlight>
+                <Text style={{color: 'white', marginLeft: 70, marginTop: -40, fontSize: 30}}>
+                  Learn
+                  </Text>
+                <Text style={{color: 'black', marginLeft: 150, marginTop: -40, fontSize: 30, backgroundColor: 'yellow', width: 62
+                  ,paddingLeft: 5, borderRadius: 5}}>
+                  hub
+                  </Text>
+                <Image
+                  style={{width: 42,height: 40, marginTop: -40, marginLeft: 300, marginRight: 10}}
+                  source={require('./assets/images/search.png')}/>
+              </View>
+              <View
+                style={{flex: 1, backgroundColor: '#302E2E'}}>
+                <ScrollView contentContainerStyle={{paddingBottom:10}}>
+                  <Text style ={{margin: 10, fontSize: 20, textShadowOffset: {width: 2, height: 2}, textShadowRadius: 2, color: 'white'}}>
+                    Username : 
+                    </Text>
+                    <TextInput  
+                      style={{height: 40, width: 340, marginTop:5, fontSize: 20, paddingLeft: 10, marginLeft: 10,
+                        backgroundColor: 'white'}}
+                      maxLength={20}
+                      defaultValue={this.state.TextName}
+                      placeholder="Username!"
+                      onChangeText={(text) => this.setState({newUsername: text})}
+                      />
+                  <Text style ={{margin: 10, fontSize: 20, textShadowOffset: {width: 2, height: 2}, textShadowRadius: 2, color: 'white'}}>
+                    Password : 
+                    </Text>
+                    <TextInput  
+                      secureTextEntry={true} 
+                      style={{height: 40, width: 340, marginTop:5, fontSize: 20, paddingLeft: 10, marginLeft: 10,
+                        backgroundColor: 'white'}}
+                      maxLength={20}
+                      defaultValue={this.state.TextPass}
+                      placeholder="Password!"
+                      onChangeText={(text) => this.setState({newPassword: text})}
+                      />
+                  <View style={{width: 200, marginLeft: 80, marginTop: 220}}>
+                    <Button
+                      title="Save Changes"
+                      color="blue"
+                      onPress={this.editProfile}
+                      accessibilityLabel="My Profile">
+                    </Button> 
+                  </View>
+                  <View style={{width: 200, marginLeft: 80, marginTop: 10}}>
+                    <Button
+                      title="cancel"
+                      color="red"
+                      onPress={this.handleCourses}
+                      accessibilityLabel="My Profile">
+                    </Button> 
+                  </View>
+                </ScrollView>
+              </View>
+              </DrawerLayoutAndroid>
+          </Modal>
+
+          <Modal 
+            animationType="slide"
+            onRequestClose={() => this.setState({})}
+            transparent={false}
+            visible={this.state.modaladdQuestion}>
+            <View
+                style={{height: 80, backgroundColor: 'black', elevation:10}}
+              >
+                <Image
+                style={{width: 42,height: 40, marginTop: 20, marginLeft: 10}}
+                  source={require('./assets/images/drawer.png')}
+                />
+                <Text style={{color: 'white', marginLeft: 70, marginTop: -40, fontSize: 30}}>
+                  Learn
+                  </Text>
+                <Text style={{color: 'black', marginLeft: 150, marginTop: -40, fontSize: 30, backgroundColor: 'yellow', width: 62
+                  ,paddingLeft: 5, borderRadius: 5}}>
+                  hub
+                  </Text>
+                <Image
+                  style={{width: 42,height: 40, marginTop: -40, marginLeft: 300, marginRight: 10}}
+                  source={require('./assets/images/search.png')}/>
+              </View>
+              <View
+                style={{flex: 1, backgroundColor: '#302E2E'}}>
+                <ScrollView contentContainerStyle={{paddingBottom:10}}>
+                  <View
+                    style={{height: 60, width: 290, backgroundColor: 'black', margin: 30, borderRadius: 8}}
+                    justifyContent='center'
+                    alignItems='center'>
+                    <Text
+                      style={{fontSize: 30, color: 'white'}}>
+                      Add Item
+                      </Text>
+                    </View>
+                      <Text
+                      style={{marginLeft: 20, fontSize: 20, color: 'white'}}>
+                      Item Name
+                      </Text>
+                    <TextInput  
+                      ref={input => { this.textInputName = input }}
+                      style={{height: 40, width: 300, marginTop: 10, fontSize: 20, paddingLeft: 10, marginLeft: 20,
+                        backgroundColor: 'white'}}
+                      placeholder="Item Name!"
+                      onChangeText={(text) => this.setState({itemName: text})}
+                      />
+                    <Text
+                      style={{marginLeft: 20, fontSize: 20, color: 'white', marginTop: 20}}>
+                      Item Description
+                      </Text>
+                      <TextInput  
+                        ref={input => { this.textInputValue = input }}
+                        style={{height: 180, width: 300, marginTop: 10, fontSize: 20, padding: 10, marginLeft: 20,
+                          backgroundColor: 'white', textAlignVertical: 'top', marginBottom: 20}}
+                          multiline={true}
+                        placeholder="Description!"
+                        onChangeText={(text) => this.setState({itemValue: text})}
+                        />
+                      <View style={{marginBottom: 10}}>
+                        <Button
+                          title="Add Next Item"
+                          color="gray"
+                          onPress={this.addQuestion}
+                          accessibilityLabel="Cancel"
+                        />
+                       </View>
+                      <View>
+                      <Button
+                        title="Finish Adding Items"
+                        color="red"
+                        onPress={this.handleCourses}
+                        accessibilityLabel="Cancel"
+                      />
+                      </View>
+                </ScrollView>
+              </View>
+          </Modal>
+          
+          <Modal
+            animationType="slide"
+            onRequestClose={() => this.setState({modalViewCourse: false, modalMain: true})}
+            transparent={false}
+            visible={this.state.modalViewCourse}>
+            <View
+                style={{height: 80, backgroundColor: 'black', elevation:10}}
+              >
+                <Image
+                style={{width: 42,height: 40, marginTop: 20, marginLeft: 10}}
+                  source={require('./assets/images/drawer.png')}
+                />
+                <Text style={{color: 'white', marginLeft: 70, marginTop: -40, fontSize: 30}}>
+                  Learn
+                  </Text>
+                <Text style={{color: 'black', marginLeft: 150, marginTop: -40, fontSize: 30, backgroundColor: 'yellow', width: 62
+                  ,paddingLeft: 5, borderRadius: 5}}>
+                  hub
+                  </Text>
+                <Image
+                  style={{width: 42,height: 40, marginTop: -40, marginLeft: 300, marginRight: 10}}
+                  source={require('./assets/images/search.png')}/>
+              </View>
+              <View
+                style={{flex: 1, backgroundColor: '#302E2E'}}>
+                <ScrollView contentContainerStyle={{paddingBottom:10}}>
+                  <Text style={{marginLeft: 10, marginRight: 10, marginTop: 10, fontSize: 20, color: "white", padding: 10, borderRadius: 5}}>
+                    Course Title : {this.state.keyCourse}
+                    </Text>
+                  <Text style={{margin: 10, marginRight: 10, marginTop: 10, fontSize: 20, color: "white", padding: 10, borderRadius: 5}}>
+                    Description : {this.state.keyDesc}
+                    </Text>
+                    <View style={{ width: 150, marginLeft: 15}}>
+                    <Button
+                      title="Take Course"
+                      color="blue"
+                      onPress={this.handleQuiz}
+                      accessibilityLabel="Cancel"
+                    />
+                    </View>
+                    <View style={{ width: 150, marginLeft: 190, marginBottom: 10, marginTop: -36}}>
+                    <Button
+                      title="cancel"
+                      color="red"
+                      onPress={this.handleCourses}
+                      accessibilityLabel="Cancel"
+                    />
+                    </View>
+                    <List style={{height: 480, backgroundColor: "white"}}>
+                      <ScrollView>
+                      {
+                        this.state.viewCourse.map((l, i) =>(
+                          <ListItem
+                            key={i}
+                            title={l.score}
+                            subtitle={l.username}
+                          />
+                        ))                    
+                      }
+                      </ScrollView>
+                    </List>
+                </ScrollView>
+              </View>
+            </Modal>
+
+            <Modal
+            animationType="slide"
+            onRequestClose={() => this.setState({modalQuiz: true})}
+            transparent={false}
+            visible={this.state.modalQuiz}>
+            <View
+                style={{height: 80, backgroundColor: 'black', elevation:10}}
+              >
+                <Image
+                style={{width: 42,height: 40, marginTop: 20, marginLeft: 10}}
+                  source={require('./assets/images/drawer.png')}
+                />
+                <Text style={{color: 'white', marginLeft: 70, marginTop: -40, fontSize: 30}}>
+                  Learn
+                  </Text>
+                <Text style={{color: 'black', marginLeft: 150, marginTop: -40, fontSize: 30, backgroundColor: 'yellow', width: 62
+                  ,paddingLeft: 5, borderRadius: 5}}>
+                  hub
+                  </Text>
+                <Image
+                  style={{width: 42,height: 40, marginTop: -40, marginLeft: 300, marginRight: 10}}
+                  source={require('./assets/images/search.png')}/>
+              </View>
+              <View
+                style={{flex: 1, backgroundColor: '#302E2E'}}>
+                <ScrollView contentContainerStyle={{paddingBottom:10, alignItems: "center"}}>
+                  <Text style={{fontSize: 40, backgroundColor: "white", width: 40, paddingLeft: 10, borderRadius: 80, height: 55, marginTop: 20}}>
+                       ?
+                    </Text>
+                  <Text style={{marginTop: 60, color: "white", fontSize: 20, marginBottom: 60}}>
+                      {this.state.question} ?
+                    </Text>
+                  <View style={{ width: 180, marginLeft: -180,borderColor: "black", borderWidth: 2}}>
+                    <Button
+                      title={this.state.letterA}
+                      color="red"
+                      onPress={this.sendAnswerA}
+                      accessibilityLabel="Cancel"
+                    />
+                  </View>
+                  <View style={{ width: 180, marginLeft: -180,borderColor: "black", borderWidth: 2}}>
+                    <Button
+                      title={this.state.letterB}
+                      color="red"
+                      onPress={this.sendAnswerB}
+                      accessibilityLabel="Cancel"
+                    />
+                  </View>
+                  <View style={{ width: 180, marginLeft: 180, marginTop: -80,borderColor: "black", borderWidth: 2}}>
+                    <Button
+                      title={this.state.letterC}
+                      color="red"
+                      onPress={this.sendAnswerC}
+                      accessibilityLabel="Cancel"
+                    />
+                  </View>
+                  <View style={{ width: 180, marginLeft: 180, marginBottom: 40,borderColor: "black", borderWidth: 2}}>
+                    <Button
+                      title={this.state.letterD}
+                      color="red"
+                      onPress={this.sendAnswerD}
+                      accessibilityLabel="Cancel"
+                    />
+                  </View>
+                  <Text style={{fontSize: 100, color: "white"}}>
+                    {this.state.intTimer}
+                    </Text>
+                </ScrollView>
+              </View>
+            </Modal>
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  ULearn: {
+    textShadowOffset: {width: 3, height: 3},
+    textShadowRadius: 4,
+    marginTop: 40,
+    fontFamily: 'serif', 
+    fontSize: 40, 
+  },
+  container: { 
+    backgroundColor: 'white',
+    alignItems: 'center',
+    borderWidth: 0,
+    borderRadius: 4,
+    elevation: 15,
+    paddingLeft: 15,
+    paddingRight: 15,
+    marginTop:40,
+    marginBottom: 50,
+    height: 350,
+    marginLeft:15,
+    marginRight:15, 
+  },
+  Text: {
+    color: 'white', 
+    fontSize: 20, 
+    textAlign: 'center',
+    backgroundColor: 'black',
+    paddingTop: 20,
+    paddingBottom: 10,
+    paddingLeft: 5,
+    paddingRight: 5,
+    marginLeft: -15,
+    marginRight: -15,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    marginBottom: 10,
+  },
+  TextField: {
+    height: 40, 
+    width: 300, 
+    alignItems: 'stretch',
+    fontSize: 20,
+  },
+  background: {
+    flex: 1, 
+    backgroundColor: '#302E2E', //#6DBBF5 old blue
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 20,
+  }
+});
